@@ -60,7 +60,13 @@ func FetchBookItem(bi *engine.BookItem) {
     bi.Html, _ = doc.Html()
     content, _ := doc.Find("#chaptercontent").Html()
     bi.Sections = append(bi.Sections, strings.Split(content, "<br/><br/>")...)
-    // 截取冗余内容
+    // 截取冗余内容(部分章节首行是章节名, 需移除)
+    if len(bi.Sections) > 0 {
+        if strings.Contains(bi.Name, strings.TrimSpace(bi.Sections[0])) {
+            bi.Sections = bi.Sections[1:]
+        }
+    }
+    // 截取冗余内容(章节末尾无效信息, 需移除)
     li := 0
     for i, text := range bi.Sections {
         if strings.Contains(text, biqgUrl) {
