@@ -8,10 +8,10 @@ import (
     "strings"
 )
 
-const biqgUrl = "https://www.biqg.cc"
+const rootUrl = "https://www.biqg.cc"
 
 func FetchBook(id string) *engine.Book {
-    url := biqgUrl + "/book/" + id
+    url := rootUrl + "/book/" + id
     book := engine.NewBook(url)
     book.Name = id
     resp, err := http.Get(url)
@@ -69,7 +69,7 @@ func FetchBookItem(bi *engine.BookItem) {
     // 截取冗余内容(章节末尾无效信息, 需移除)
     li := 0
     for i, text := range bi.Sections {
-        if strings.Contains(text, biqgUrl) {
+        if strings.Contains(text, rootUrl) {
             li = i
             break
         }
