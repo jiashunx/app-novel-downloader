@@ -18,5 +18,6 @@ func (dl *downloader) FetchBookItem(bi *engine.BookItem) {
 }
 
 var Instance = &downloader{
+    // 与 https://www.biqg.cc 网页格式元素一致，因此复用 biqg 下载器
     proxyDL: biqg.NewDownloader("https://www.bqgas.cc"),
 }
