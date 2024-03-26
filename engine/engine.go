@@ -19,6 +19,7 @@ func (dl *Downloader) Download(id string) (*Book, error) {
         book.Done = true
         return book, book.Error
     }
+    fmt.Printf("获取小说章节列表成功,小说信息:Id=%s,Url=%s,Name=%s\n", id, book.Url, book.Name)
     tasks := make([]*DLTask, 0, len(book.Items))
     dl.Chan = make(chan *DLTask, len(book.Items))
     for _, bi := range book.Items {
