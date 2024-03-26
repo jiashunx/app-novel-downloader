@@ -6,44 +6,50 @@ import (
     "strconv"
 )
 
-type Downloader struct {
-    GoroutineNums   int
-    Chan            chan *DLTask
-    FetchBook       func(string) *Book
-    FetchBookItem   func(*BookItem)
+type Downloader interface {
+    FetchBook(id string) *Book
+    FetchBookItem(bi *BookItem)
 }
 
-func (dl *Downloader) Download(id string) (*Book, error) {
+type task struct {
+    bookItem *BookItem
+    ch chan bool
+}
+
+func Download(dl Downloader, id string) (*Book, error) {
     book := dl.FetchBook(id)
     if book.Error != nil {
         book.Done = true
         return book, book.Error
     }
     fmt.Printf("获取小说章节列表成功,小说信息:Id=%s,Url=%s,Name=%s\n", id, book.Url, book.Name)
-    tasks := make([]*DLTask, 0, len(book.Items))
-    dl.Chan = make(chan *DLTask, len(book.Items))
+    tasks := make([]*task, 0, len(book.Items))
+    ch := make(chan *task, len(book.Items))
     for _, bi := range book.Items {
-        t := NewDLTask(bi)
-        dl.Chan <- t
+        t := &task{
+            bookItem: bi,
+            ch: make(chan bool, 1),
+        }
+        ch <- t
         tasks = append(tasks, t)
     }
-    close(dl.Chan)
-    for i := 0; i < dl.GoroutineNums; i++ {
+    close(ch)
+    for i := 0; i < 10; i++ {
         go func() {
             for {
-                t, ok := <- dl.Chan;
+                t, ok := <- ch;
                 if !ok {
                     break
                 }
-                dl.FetchBookItem(t.BookItem)
-                t.Chan <- true
-                close(t.Chan)
+                dl.FetchBookItem(t.bookItem)
+                t.ch <- true
+                close(t.ch)
             }
         }()
     }
     for _, t := range tasks {
-        <- t.Chan
-        bi := t.BookItem
+        <- t.ch
+        bi := t.bookItem
         if bi.Error != nil {
             fmt.Printf("下载章节处理错误,章节信息:Id=%d,Url=%s,Name=%s,错误信息:%v\n", bi.Id, bi.Url, bi.Name, bi.Error)
             continue
@@ -54,8 +60,8 @@ func (dl *Downloader) Download(id string) (*Book, error) {
     return book, nil
 }
 
-func (dl *Downloader) StoreNovel(id string) error {
-    book, err := dl.Download(id)
+func StoreNovel(dl Downloader, id string) error {
+    book, err := Download(dl, id)
     if err != nil {
         return err
     }
@@ -79,28 +85,4 @@ func (dl *Downloader) StoreNovel(id string) error {
     fmt.Println("存储小说章节总数:" + strconv.Itoa(len(book.Items)))
     fmt.Println("存储小说文件名:" + file.Name())
     return nil
-}
-
-func NewDownloader(goroutineNums int, fetchBook func(string) *Book, fetchBookItem func(*BookItem)) *Downloader {
-    if goroutineNums <= 0 || goroutineNums > 50 {
-        goroutineNums = 10
-    }
-    return &Downloader{
-        GoroutineNums: goroutineNums,
-        Chan: nil,
-        FetchBook: fetchBook,
-        FetchBookItem: fetchBookItem,
-    }
-}
-
-type DLTask struct {
-    BookItem        *BookItem
-    Chan            chan bool
-}
-
-func NewDLTask(bi *BookItem) *DLTask {
-    return &DLTask{
-        BookItem: bi,
-        Chan: make(chan bool, 1),
-    }
 }
