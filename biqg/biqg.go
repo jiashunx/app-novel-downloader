@@ -40,7 +40,7 @@ func FetchBook(id string) *engine.Book {
         }
         a := s.ChildrenFiltered("a")
         href, _ := a.Attr("href")
-        book.Items = append(book.Items, engine.NewBookItem(i, biqgUrl+ href, a.Text()))
+        book.Items = append(book.Items, engine.NewBookItem(i, rootUrl + href, a.Text()))
     })
     return book
 }
