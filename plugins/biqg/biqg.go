@@ -42,7 +42,7 @@ func (dl *downloader) FetchBook(id string) *engine.Book {
         }
         a := s.ChildrenFiltered("a")
         href, _ := a.Attr("href")
-        book.Items = append(book.Items, engine.NewBookItem(i, dl.rootUrl + href, a.Text()))
+        book.Items = append(book.Items, engine.NewBookItem(i, dl.rootUrl+href, a.Text()))
     })
     return book
 }
@@ -71,12 +71,14 @@ func (dl *downloader) FetchBookItem(bi *engine.BookItem) {
     // 截取冗余内容(章节末尾无效信息, 需移除)
     li := 0
     for i, text := range bi.Sections {
-        if strings.Contains(text, dl.rootUrl) {
+        if strings.Contains(text, "请收藏本站") && strings.Contains(text, "手机版") {
             li = i
             break
         }
     }
-    bi.Sections = bi.Sections[0:li]
+    if li > 0 {
+        bi.Sections = bi.Sections[0:li]
+    }
 }
 
 func NewDownloader(rootUrl string) *downloader {
